@@ -1,0 +1,22 @@
+{
+  "id": "magpie",
+  "name": "Magpie 本地网关",
+  "base_url": "http://127.0.0.1:3425/v1",
+  "env_key": "MAGPIE_API_KEY",
+  "default_model": null,
+  "context_limit_tokens": null,
+  "verified_at": "2026-11-13",
+  "known_incompatibilities": [
+    "模型名是 magpie 自己的命名（provider/model 或路由组，如 auto/glm-5.3），不是厂商原名；写错会得到 model not found。先跑 GET /v1/models 看清单，或用 vibe-astock-magpie doctor 现场探测。",
+    "地址只能是本机回环的 http://127.0.0.1:3425/v1。Vibe AStock 的地址校验只放行 https 和 localhost / 127.0.0.1 / [::1]：magpie 装在别的机器上时要给它一个 https 域名（Tailscale Serve、Caddy 反代），直连 http://192.168.x.x:3425 会被拒绝。",
+    "这里填的是 magpie 自己的本地 key（默认就是字面量 magpie），不是上游厂商的 key。上游的 API key / 订阅登录都在 magpie 里配，不要写进 Vibe AStock。",
+    "magpie 按路由组做故障转移：同一轮对话里换到另一个模型时，工具调用与推理内容的格式由 magpie 翻译，产品侧不用改；但某个模型本身不支持工具调用时，研究阶段会在这个模型上失败，换一个支持 function calling 的模型即可。"
+  ],
+  "notes": [
+    "magpie（github.com/yetone/magpie）是本地 AI 网关：把 Claude Code / Codex / Kimi / GLM 等订阅和 API key 收在一处，对外用 OpenAI Chat Completions 协议服务，内部翻译到各家协议，流式、工具调用、推理内容都保留。",
+    "默认监听 127.0.0.1:3425（环境变量 MAGPIE_ADDR 可改），OpenAI 兼容前缀是 /v1；同时提供 /v1/messages（Anthropic）与 Gemini 兼容路径。",
+    "模型清单：GET http://127.0.0.1:3425/v1/models。每项带 context_window、magpie_label；auto/* 是带故障转移的路由组。",
+    "本模板的 default_model 故意留空：安装时由安装器现场探测网关，把探测到的模型名写进数据根里的那份拷贝（产品模板保持通用）。",
+    "Vibe AStock 的六阶段研究和页面 Agent 都要求 function calling，verify 会把这条线实测一遍并把结论写进 direct 段。"
+  ]
+}
