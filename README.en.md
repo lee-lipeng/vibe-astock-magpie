@@ -1,150 +1,112 @@
 # vibe-astock-magpie
 
 Connect a local [magpie](https://github.com/yetone/magpie) gateway to
-[Vibe AStock](https://github.com/simonlin1212/vibe-astock) — an A-share short-line review workbench.
+[Vibe AStock](https://github.com/simonlin1212/vibe-astock).
 
-After installing, Vibe AStock's *Connect AI* picker lists **every model the gateway offers**: choose one, hit
-*Test and save*, done. No URL, no model name, no key to type.
+Once installed, Vibe AStock's *Connect AI* picker lists every model the gateway offers. Pick one, hit *Test and save* —
+no URL, model name or key to type.
 
-![Connect AI with a magpie model selected](https://raw.githubusercontent.com/lee-lipeng/vibe-astock-magpie/main/docs/settings-dropdown.png)
-
-Vibe AStock v2 speaks **OpenAI-compatible Chat Completions** only (`POST {base_url}/chat/completions`), and magpie serves
-exactly that at `http://127.0.0.1:3425/v1` — so the two fit together without touching product code.
+![A magpie model selected in Connect AI](https://raw.githubusercontent.com/lee-lipeng/vibe-astock-magpie/main/docs/settings-dropdown.png)
 
 ## Requirements
 
-| Item | Requirement |
-|---|---|
-| Node.js | ≥ 22.18 (native `fetch`, `node --test`) |
-| Vibe AStock | v2.1.x **from source** (tested on v2.1.6); the portable build ships a prebuilt `desktop/dist` and cannot take the picker patch |
-| magpie | running, default `127.0.0.1:3425` (`MAGPIE_ADDR` changes it) |
-| OS | Windows, macOS or Linux — the scripts use Node's standard library only |
+- Node.js ≥ 22.18
+- Vibe AStock v2.1.x from source (the portable build ships a prebuilt `desktop/dist`, which cannot take the patch)
+- magpie running, default `127.0.0.1:3425`
 
 ## Install
 
 ```sh
-# inside the Vibe AStock checkout
-npx vibe-astock-magpie install
-
-# or point at it from anywhere
+npx vibe-astock-magpie install                        # inside the Vibe AStock checkout
 npx vibe-astock-magpie install --repo /path/to/vibe-astock
-
-# template only, leave the frontend alone
-npx vibe-astock-magpie install --repo /path/to/vibe-astock --no-ui
+npx vibe-astock-magpie install --repo /path/to/vibe-astock --no-ui   # template only
 ```
 
-Before the npm release, run it from source: `node bin/cli.mjs install --repo <path>`.
+Before the npm release: `node bin/cli.mjs install --repo <path>` from a clone.
 
-The installer:
+The installer writes `<repo>/.local/providers/magpie.json` (default model: a magpie `auto/*` routing group) and inserts the
+gateway's current model list into `ai-models.ts`. A gateway that is not running is fine — the default model stays empty.
 
-1. probes `http://127.0.0.1:3425/v1/models` and writes `<repo>/.local/providers/magpie.json` with a working default model
-   (prefers magpie's `auto/*` routing groups). A gateway that is not running is not fatal — the model is just left empty;
-2. renders **every model the gateway offers** into the picker as one marked block, plus five one-line patches
-   (type, base URL, source label, key prefill), each marked `// magpie-plugin`.
+Restart Vibe AStock, then: **Connect AI → API → pick a `Magpie · …` entry → Test and save.** Base URL, model id and the
+API key come along.
 
-Then restart Vibe AStock and pick a model: **Connect AI → API → any `Magpie · …` entry → Test and save.**
-Base URL, model id and the API key (`magpie`, the gateway's local default) come along.
+After adding a provider or routing group in magpie, run `vibe-astock-magpie models` and reload. The picker is a
+compile-time constant; nothing is fetched at runtime.
 
-> After adding a provider or routing group in magpie, run `vibe-astock-magpie models` and reload the page — the picker is
-> a compile-time constant and nothing is fetched at runtime. `doctor` tells you when it is out of date.
-
-Without the tool, the stock UI still works: *Connect AI → Other OpenAI-compatible endpoint* with
-`http://127.0.0.1:3425/v1`, a model id from `/v1/models`, and the key `magpie`.
+Without the tool: *Connect AI → Other OpenAI-compatible endpoint* with `http://127.0.0.1:3425/v1`, a model id, and the key
+`magpie`.
 
 ## Commands
 
 ```
-vibe-astock-magpie install     [--repo DIR] [--base-url URL] [--model ID] [--key KEY] [--no-ui] [--force] [--dry-run]
-vibe-astock-magpie models      [--repo DIR] [--base-url URL] [--key KEY] [--dry-run]
-vibe-astock-magpie uninstall   [--repo DIR] [--dry-run]
-vibe-astock-magpie verify      [--repo DIR] [--tests 1,2,7,8] [--model ID] [--write]
-vibe-astock-magpie doctor      [--repo DIR]
+install    template + model list + patches (idempotent)
+models     refresh the model list only
+uninstall  remove the template and every patch
+verify     run Vibe AStock's own capability matrix; --write stores the result
+doctor     check repo, template, gateway, model count, patch state
 ```
 
-`verify` reuses Vibe AStock's own provider matrix (`orchestrator/src/finance/provider_matrix.ts`): ten small rounds covering
-text, single/chained/parallel tool calls, tool-error recovery, long output, a tool-free JSON closing turn, server-side JSON
-Schema, multi-turn context and image input. Results land in `.local/provider-matrix/magpie/<time>/`; `--write` copies the
-suggested `direct` block into the data-root template only.
+Shared options: `--repo`, `--data-root`, `--dry-run`. `verify` also takes `--tests`, `--model`, `--write`.
 
-Exit codes: `0` done (including "gateway not running", which degrades), `2` precondition missing, `1` unexpected error.
+Exit codes: 0 done (including "gateway not running"), 2 precondition missing, 1 unexpected error.
 
 ## Measured
 
-2026-11-13, model `auto/glm-5.3-flash`, Vibe AStock v2.1.6: **8 pass, 1 fail, 1 timeout**.
+2026-11-13, `auto/glm-5.3-flash`, Vibe AStock v2.1.6 — 8 of 10:
 
-Everything the six-stage research loop needs — tool calls, chaining, parallel calls, error recovery, long output,
-multi-turn — passes. Server-side JSON Schema is not enforced by this model, so structured output falls back to prompt mode
-(the product's own validators still check every artifact). Image input timed out, so image-based material import is out.
-
-## How it works
-
-Vibe AStock already accepts any provider template dropped into its data root (`<dataRoot>/providers/<id>.json`, which wins
-over the bundled ones), but the *Connect AI* picker is a compile-time constant with no dynamic source. So:
-
-| Change | Where | Shape |
+| # | Case | Result |
 |---|---|---|
-| provider template | `<dataRoot>/providers/magpie.json` | an extension point the product already has |
-| model list | `desktop/src/.../lib/ai-models.ts` | one block between two markers: replaced on refresh, deleted on uninstall |
-| type, base URL, preset name, source label, key prefill (five lines) | `ai-models.ts`, `aiConnection.ts`, `Settings.tsx` | one line each, marked `// magpie-plugin` |
+| 1 | single text turn | pass |
+| 2 | one tool call | pass |
+| 3 | three chained tool calls | pass |
+| 4 | parallel tool calls | pass |
+| 5 | recovery after a failing tool | pass |
+| 6 | long output | pass |
+| 7 | tool-free JSON closing turn | pass |
+| 8 | server-side JSON Schema | fail — structured output falls back to the prompt |
+| 9 | multi-turn context | pass |
+| 10 | image input | timeout after 180 s |
 
-Every patch is idempotent and reversible; when an anchor is missing (upstream changed the file) it is skipped and reported
-instead of guessing.
+Other models may differ; rerun `verify --write`.
 
-**Why not fetch at runtime**: the gateway sends no CORS headers and answers `OPTIONS` with 404, so `fetch('/v1/models')`
-from a page is always blocked. Getting around that means patching the Vite proxy or the backend — not worth it to save one
-`models` command.
+## What it touches
 
-## Safety
+- `<dataRoot>/providers/magpie.json` — a provider template, which the product already supports
+- `desktop/src/verticals/finance/lib/ai-models.ts` — the model list between `// magpie-plugin:begin/end`
+- `ai-models.ts`, `aiConnection.ts`, `Settings.tsx` — one marked line each (type, base URL, preset name, source label, key prefill)
 
-- The plugin collects nothing and reports nothing; its only network call goes to `127.0.0.1:3425`.
-- The template stores an **environment variable name** (`MAGPIE_API_KEY`), never a key. The prefilled `magpie` is magpie's
-  local literal, kept in the browser's localStorage exactly like a typed key.
-- Upstream vendor keys and subscription logins stay inside magpie; Vibe AStock only talks to the gateway.
-- `uninstall` restores every touched file byte for byte (covered by tests).
+Patches are idempotent and skipped when an anchor is gone; after `uninstall`, `git status` shows only your own changes. The
+template stores an environment variable name (`MAGPIE_API_KEY`), never a key — the prefilled `magpie` is the gateway's local
+literal, handled by the product's own localStorage path.
 
-## Known limits
+## Limits
 
-- The picker does not follow magpie by itself — run `models` after adding models.
-- No image input on this line (timeout).
-- No server-side JSON Schema; structured output falls back to prompt mode.
-- The portable build (prebuilt `desktop/dist`) cannot take the patch unless you `npm run build` again.
-- A remote magpie needs https: Vibe AStock only allows `https` and `localhost / 127.0.0.1 / [::1]`.
+- The picker does not follow magpie by itself — run `models` after adding models
+- No image input on this line
+- No server-side JSON Schema; the product's validators still check every artifact
+- A remote magpie needs an https hostname (only `https` and `localhost / 127.0.0.1 / [::1]` are allowed)
 
-## Layout
+## The magpie page plugin
 
-```
-provider.json          provider template (generic, default_model left empty)
-bin/cli.mjs            install / models / uninstall / verify / doctor
-lib/install.mjs        repo + data-root detection, template IO, gateway probe
-lib/models.mjs         gateway catalogue -> picker entries
-lib/patch.mjs          model block + five one-line patches
-test/patch.test.mjs    16 pure-function tests
-magpie-page/           a page plugin for magpie's Plugins tab
-docs/                  screenshots used by this README
-PUBLISH.md             how to publish to npm / GitHub / the magpie registry
+`magpie-page/` is a page for magpie's Plugins tab: it shows what to paste, with copy buttons.
+
+![The Vibe AStock page inside magpie](https://raw.githubusercontent.com/lee-lipeng/vibe-astock-magpie/main/docs/magpie-page.png)
+
+```sh
+magpie plugin add ./magpie-page
+magpie plugin add @lee-lipeng/page-vibe-astock   # once published
 ```
 
 ## Development
 
 ```sh
-npm test                          # 16 tests, no gateway needed
+npm test                                              # 16 tests, no gateway needed
 node bin/cli.mjs doctor --repo /path/to/vibe-astock
 node bin/cli.mjs install --repo /path/to/vibe-astock --dry-run
 ```
 
-## FAQ
-
-**Not port 3425?** magpie listens where `MAGPIE_ADDR` says; pass `--base-url`.
-
-**magpie on another machine?** Give it an https hostname (Tailscale Serve, Caddy); Vibe AStock rejects plain http to a LAN IP.
-
-**Which key?** magpie's own local key — the literal `magpie` by default. Vendor keys live in magpie.
-
-**`git pull` lost the picker entry?** Upstream overwrote the patched file; run `install` again (idempotent).
-
-**Does uninstall leave anything?** No: template removed, marker lines and the block deleted, `git status` back to your own changes.
+Publishing steps: [PUBLISH.md](PUBLISH.md).
 
 ## License
 
-MIT. Not affiliated with [Vibe AStock](https://github.com/simonlin1212/vibe-astock) (Apache-2.0) or
-[magpie](https://github.com/yetone/magpie) (MIT).
+MIT. Not affiliated with Vibe AStock (Apache-2.0) or magpie (MIT).

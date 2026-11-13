@@ -2,52 +2,31 @@
 
 ## 0.2.0 — 2026-11-13
 
-装完插件后不再手抄 URL / 模型名 / key：下拉里直接挑一个模型。
-
-- 「接入 AI」的模型下拉里列出网关的**每个模型**（`Magpie · GLM-5.3-Flash —— auto/glm-5.3-flash · 1.0M`），
-  选中后 Base URL、Model、API Key 三项自动带出。
-- 新增 `models` 命令：在 magpie 里加了 provider / 路由组后刷新下拉（编译期常量，运行时不发请求）；
-  `doctor` 会对比下拉条数与网关条数，不一致直接报出来。
-- 模型清单改成一个标记块（`// magpie-plugin:begin` / `:end`）：刷新整块替换，卸载整块删除；
-  另加 `Settings.tsx` 的 key 预填补丁（选中 Magpie 时填本地默认 key `magpie`）。
+- 「接入 AI」下拉里列出网关的每个模型（`Magpie · GLM-5.3-Flash —— auto/glm-5.3-flash · 1.0M`），
+  选中后 Base URL、Model、API Key 自动带出。
+- 新增 `models` 命令，在 magpie 里加了 provider / 路由组后刷新下拉；`doctor` 会对比下拉条数与网关条数。
+- 模型清单改成一对标记之间的整块，刷新整块替换、卸载整块删除；`Settings.tsx` 加一行 key 预填。
 - 重装不再丢 `verify` 写下的 `direct` 段。
-- 测试 16 项：新增模型清单块的插入 / 刷新 / 摘除 / CRLF、清单转条目、key 预填补丁。
+- 测试 16 项。
 
 ## 0.1.2 — 2026-11-13
 
-magpie page 插件按 magpie 的实际加载方式重做（已在 magpie 0.1.x 本机安装验证）。
-
-- 页面拆成 `index.html` + `page.css` + `page.js`：magpie 的 page 用外部脚本加载（官方 `usage` 页同构），
-  内联 `<script>` 在 CSP 下不保证执行。
-- 去掉页面里的 `/v1/models` 请求：magpie 网关不带 CORS 头、`OPTIONS` 直接 404，页面里 fetch 必被拦，
-  留着只会让用户看到一条失败提示。模型名改为到 magpie 自己的模型列表里复制。
-- 页面现在**不发任何网络请求、不声明任何权限**，也不再需要 `_magpie/bridge.js`。
-- 页面文案改成四步，并写明已知边界（JSON Schema 走提示词、图片输入不支持）。
+- magpie 页面改成外部 `page.css` / `page.js`（magpie 的 page 用外部脚本加载，内联脚本在 CSP 下不保证执行）。
+- 去掉页面里的 `/v1/models` 请求：网关不带 CORS 头、`OPTIONS` 返回 404，页面里必被拦。
+- 页面现在不发请求、不声明权限，也不需要 `_magpie/bridge.js`。
 
 ## 0.1.1 — 2026-11-13
 
-发布前的一轮代码审查，无接口变更。
-
-- 补丁保留原文件换行风格：Windows 检出是 CRLF，之前插入的行是裸 LF，会让 `git diff` 混行尾。
-- 幂等判据改成显式的 `sentinel`，不再依赖 `replace.trim()` 的隐式比较。
-- `--base-url` 走 `normalizeBaseURL`：去掉尾斜杠（产品侧拼 `/chat/completions`，多一个斜杠会 404）、
-  拒绝远程 http 与带凭据的地址，规则与 Vibe AStock 的 `providerUrlError` 对齐。
-- 模板安装语义修正：显式 `--model` / `--base-url` 优先，未给才沿用已装的值；内容没变不重写。
-- `--repo` / `--data-root` 忘了给值时不再把 `true` 当路径。
-- `verify` 先检查 `orchestrator/node_modules` 与矩阵入口，缺依赖时给一句能照做的提示。
-- 安装时模型清单只打前 12 个；`--dry-run` 的补丁输出改成「将打补丁」。
-- magpie 页面：模型清单改用 DOM 构建（原来拼 `innerHTML`，网关返回的 `magpie_label` 会被当 HTML 解析），
-  并补 `role="status"`、`type="button"`、`rel="noopener"`。
-- 测试从 7 项扩到 11 项：CRLF 往返、地址校验、模板安装语义、数据根解析。
+- 补丁保留原文件换行风格（CRLF 检出不再混进 LF）。
+- 幂等判据改成显式的 sentinel。
+- `--base-url` 走 `normalizeBaseURL`：去尾斜杠、拒绝远程 http 与带凭据的地址。
+- 模板安装：显式参数优先，内容没变不重写。
+- `--repo` / `--data-root` 漏写值时不再把 `true` 当路径。
+- `verify` 先检查矩阵入口与 `orchestrator/node_modules`。
+- 页面改用 DOM 构建模型表，不再拼 `innerHTML`。
 
 ## 0.1.0 — 2026-11-13
 
-首个版本。
+首个版本：provider 模板、`install` / `uninstall` / `verify` / `doctor`、下拉补丁、magpie page 插件。
 
-- `install`：写 `<数据根>/providers/magpie.json`，现场探测 `GET /v1/models` 挑默认模型（优先 `auto/*` 路由组）；
-  可选给 Vibe AStock「接入 AI」的模型下拉补一条 *Magpie 网关*（5 行，带 `// magpie-plugin` 标记）。
-- `uninstall`：删模板 + 逐行摘补丁，仓库回到原样。
-- `verify`：复用 Vibe AStock 的 `provider_matrix.ts` 跑 10 项兼容矩阵，`--write` 把建议的 `direct` 段写回数据根模板。
-- `doctor`：仓库 / 数据根 / 模板 / 网关 / 模型 / 补丁 / 实测记录一次看全。
-- `magpie-page/`：magpie page 插件（`@lee-lipeng/page-vibe-astock`），装进 magpie 的 Plugins 页。
-- 实测（`auto/glm-5.3-flash`）：8 通过 / 1 失败（服务端 JSON Schema，回落提示词）/ 1 超时（图片输入）。
+实测（`auto/glm-5.3-flash`）：10 项里 8 通过；服务端 JSON Schema 不生效，图片输入超时。
