@@ -4,63 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Vibe AStock × magpie</title>
-<style>
-  :root {
-    --bg: #ffffff; --fg: #1b1b1f; --muted: #66666f; --line: #e6e6ec;
-    --card: #f7f7fa; --accent: #c92a2a; --code: #f0f0f5;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #16161a; --fg: #ececf1; --muted: #9a9aa5; --line: #2b2b33; --card: #1e1e24; --accent: #ff6b6b; --code: #26262e; }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; padding: 28px 22px 44px; background: var(--bg); color: var(--fg);
-    font: 14px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  }
-  .wrap { max-width: 720px; margin: 0 auto; }
-  header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
-  header svg { width: 34px; height: 34px; flex: none; }
-  h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
-  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 22px; }
-  .status {
-    display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 10px;
-    background: var(--card); border: 1px solid var(--line); font-size: 13px; margin-bottom: 22px;
-  }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
-  .dot.ok { background: #2f9e44; } .dot.bad { background: var(--accent); }
-  section { margin-bottom: 22px; }
-  h2 { font-size: 14px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
-  h2 .n {
-    display: inline-flex; width: 20px; height: 20px; border-radius: 50%; align-items: center; justify-content: center;
-    background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; flex: none;
-  }
-  p { margin: 0 0 8px; color: var(--muted); }
-  code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px;
-    background: var(--code); padding: 2px 6px; border-radius: 5px; color: var(--fg);
-  }
-  .cmd {
-    display: flex; align-items: center; gap: 10px; background: var(--code); border-radius: 9px;
-    padding: 9px 11px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px;
-    overflow-x: auto; white-space: nowrap;
-  }
-  .cmd span { flex: 1; }
-  button {
-    font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 7px; cursor: pointer;
-    border: 1px solid var(--line); background: var(--bg); color: var(--fg); flex: none;
-  }
-  button:hover { border-color: var(--accent); color: var(--accent); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  td, th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--muted); font-weight: 500; font-size: 12px; }
-  td.id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
-  .empty { color: var(--muted); font-size: 13px; padding: 10px 0; }
-  .empty code { display: inline-block; margin-top: 4px; }
-  footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .tip { font-size: 12px; color: var(--muted); margin-top: 6px; }
-</style>
+<link rel="stylesheet" href="page.css" />
+<script src="page.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -73,11 +18,6 @@
     <h1>Vibe AStock × magpie</h1>
   </header>
   <p class="sub">让 Vibe AStock 的对话、六阶段研究和回测，都用这台机器上的 magpie 网关出模型。</p>
-
-  <div class="status">
-    <span class="dot" id="dot"></span>
-    <span id="statusText" role="status" aria-live="polite">正在检查网关…</span>
-  </div>
 
   <section>
     <h2><span class="n">1</span>确认网关在跑</h2>
@@ -97,17 +37,22 @@
     <table>
       <tr><th style="width:96px">字段</th><th>值</th></tr>
       <tr><td>Base URL</td><td class="id">http://127.0.0.1:3425/v1 <button type="button" data-copy="http://127.0.0.1:3425/v1">复制</button></td></tr>
-      <tr><td>Model</td><td class="id">见下表（形如 <code>provider/model</code>）</td></tr>
+      <tr><td>Model</td><td class="id">magpie 里的模型名，形如 <code>auto/glm-5.3-flash</code>、<code>codex/gpt-6-sol</code></td></tr>
       <tr><td>API Key</td><td class="id">magpie <button type="button" data-copy="magpie">复制</button></td></tr>
     </table>
-    <p class="tip">key 是 magpie 自己的本地 key，不是上游厂商的 key；上游的 key 和订阅登录都在 magpie 里配。</p>
+    <p class="tip">
+      模型名在 magpie 自己的模型列表里复制（本页不读网关，也不申请任何权限）。
+      key 是 magpie 的本地 key，不是上游厂商的 key —— 上游的 key 和订阅登录都在 magpie 里配。
+    </p>
   </section>
 
   <section>
-    <h2>网关的模型</h2>
-    <div id="models" class="empty">正在读取…</div>
-    <p style="margin-top:10px"><button type="button" id="reload">重新读取 /v1/models</button></p>
-    <p class="tip">读不到不代表 Vibe AStock 连不上：页面受浏览器跨域限制，Vibe AStock 是从本机后端直接连网关的。</p>
+    <h2><span class="n">4</span>点「测试并保存」</h2>
+    <p>Vibe AStock 会先真发一轮对话，成功后才保存。之后对话、六阶段研究、多空辩论、回测都走这一个来源。</p>
+    <p class="tip">
+      已知边界：服务端 JSON Schema 约束在 magpie 上不生效，结构化输出走提示词（产品自己的校验照旧把关）；
+      图片输入不支持，所以「从截图或表格识别」用不了，文字资料不受影响。
+    </p>
   </section>
 
   <footer>
@@ -117,97 +62,5 @@
     插件 <a href="https://github.com/lee-lipeng/vibe-astock-magpie" target="_blank" rel="noreferrer noopener">vibe-astock-magpie</a>
   </footer>
 </div>
-<script>
-  const BASE = "http://127.0.0.1:3425/v1";
-  const dot = document.getElementById("dot");
-  const statusText = document.getElementById("statusText");
-  const modelsBox = document.getElementById("models");
-
-  /** 复制到剪贴板；按钮短暂显示「已复制」 */
-  function copy(text, button) {
-    const flash = () => {
-      const old = button.textContent;
-      button.textContent = "已复制";
-      setTimeout(() => { button.textContent = old; }, 1200);
-    };
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).then(flash, () => {});
-      return;
-    }
-    const area = document.createElement("textarea");
-    area.value = text;
-    document.body.appendChild(area);
-    area.select();
-    try { document.execCommand("copy"); flash(); } catch { /* 浏览器不给就算了 */ }
-    document.body.removeChild(area);
-  }
-
-  document.querySelectorAll("[data-copy]").forEach((button) =>
-    button.addEventListener("click", () => copy(button.dataset.copy, button)));
-  document.querySelectorAll("[data-copy-target]").forEach((button) =>
-    button.addEventListener("click", () => copy(document.getElementById(button.dataset.copyTarget).textContent, button)));
-
-  /** 用 DOM 拼模型表：模型 id 与标签来自网关，一律当文本，不拼 HTML */
-  function renderModels(entries) {
-    const table = document.createElement("table");
-    const head = table.insertRow();
-    for (const title of ["模型 id", "说明"]) {
-      const th = document.createElement("th");
-      th.textContent = title;
-      head.appendChild(th);
-    }
-    for (const entry of entries) {
-      const row = table.insertRow();
-      const idCell = row.insertCell();
-      idCell.className = "id";
-      idCell.textContent = entry.id;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = "复制";
-      button.style.marginLeft = "8px";
-      button.addEventListener("click", () => copy(entry.id, button));
-      idCell.appendChild(button);
-      const labelCell = row.insertCell();
-      labelCell.textContent = entry.label || "";
-      labelCell.style.color = "var(--muted)";
-      labelCell.style.fontSize = "12px";
-    }
-    modelsBox.className = "";
-    modelsBox.replaceChildren(table);
-  }
-
-  function renderProblem(message) {
-    modelsBox.className = "empty";
-    const text = document.createElement("div");
-    text.textContent = "浏览器跨域或网关没启动（" + message + "）。在终端确认：";
-    const cmd = document.createElement("code");
-    cmd.textContent = "curl " + BASE + "/models";
-    modelsBox.replaceChildren(text, cmd);
-  }
-
-  async function loadModels() {
-    modelsBox.className = "empty";
-    modelsBox.textContent = "正在读取…";
-    try {
-      const res = await fetch(BASE + "/models", { signal: AbortSignal.timeout(4000) });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const body = await res.json();
-      const entries = (body?.data ?? [])
-        .filter((m) => m && typeof m.id === "string")
-        .map((m) => ({ id: m.id, label: typeof m.magpie_label === "string" ? m.magpie_label : "" }));
-      if (!entries.length) throw new Error("清单为空");
-      dot.className = "dot ok";
-      statusText.textContent = "网关在线，共 " + entries.length + " 个模型";
-      renderModels(entries);
-    } catch (e) {
-      dot.className = "dot bad";
-      statusText.textContent = "这个页面读不到网关";
-      renderProblem(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  document.getElementById("reload").addEventListener("click", loadModels);
-  loadModels();
-</script>
 </body>
 </html>

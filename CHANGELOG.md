@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.2 — 2026-11-13
+
+magpie page 插件按 magpie 的实际加载方式重做（已在 magpie 0.1.x 本机安装验证）。
+
+- 页面拆成 `index.html` + `page.css` + `page.js`：magpie 的 page 用外部脚本加载（官方 `usage` 页同构），
+  内联 `<script>` 在 CSP 下不保证执行。
+- 去掉页面里的 `/v1/models` 请求：magpie 网关不带 CORS 头、`OPTIONS` 直接 404，页面里 fetch 必被拦，
+  留着只会让用户看到一条失败提示。模型名改为到 magpie 自己的模型列表里复制。
+- 页面现在**不发任何网络请求、不声明任何权限**，也不再需要 `_magpie/bridge.js`。
+- 页面文案改成四步，并写明已知边界（JSON Schema 走提示词、图片输入不支持）。
+
 ## 0.1.1 — 2026-11-13
 
 发布前的一轮代码审查，无接口变更。

@@ -62,8 +62,8 @@ magpie 的 Plugins 页读的是 [`magpie-community/plugins`](https://github.com/
      "kind": "page",
      "icon": null,
      "summary": {
-       "en": "Wire Vibe AStock to this gateway: base URL, key and model names to paste, with a live model list",
-       "zh": "把 Vibe AStock 接到本网关：该填的地址、key 和模型名，带实时模型清单"
+       "en": "Wire Vibe AStock to this gateway: the base URL, key and model names to paste, in four steps",
+       "zh": "把 Vibe AStock 接到本网关：该填的地址、key 和模型名，四步接完"
      }
    }
    ```
@@ -76,7 +76,7 @@ magpie 的 Plugins 页读的是 [`magpie-community/plugins`](https://github.com/
    ```
 
 5. 提 PR，说明里写清：装的是什么（Vibe AStock 的 page，不是 provider）、不声明任何 `permissions`、
-   页面只读 `127.0.0.1:3425/v1/models`（跨域失败会降级成文字说明，不影响任何功能）。
+   页面不发任何网络请求（只做复制），所以不需要 `_magpie/bridge.js`。
 
 > page 包不接任何账号、不发请求，所以 `registry.json` 里 `"kind": "page"` 且没有 `providers` 字段 ——
 > 这正是社区仓库 README「The market」那节描述的无登录条目。

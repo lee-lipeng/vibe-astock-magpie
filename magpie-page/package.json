@@ -1,7 +1,7 @@
 {
   "name": "@lee-lipeng/page-vibe-astock",
-  "version": "0.1.0",
-  "description": "A page in magpie's window that wires Vibe AStock (A-share short-line workbench) to this gateway: the base URL, key and model names to paste, with a live model list",
+  "version": "0.1.1",
+  "description": "A page in magpie's window that wires Vibe AStock (A-share short-line workbench) to this gateway: the base URL, key and model names to paste, in four steps",
   "files": ["page", "README.md"],
   "keywords": ["magpie", "magpie-page", "vibe-astock", "a-share", "gateway"],
   "license": "MIT",

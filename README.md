@@ -4,7 +4,7 @@
 并给 magpie 的 Plugins 页带一个说明页。
 
 - **Vibe AStock 侧**：写一份 `providers` 模板到数据根 + 可选给「接入 AI」的模型下拉补一条 *Magpie 网关*；带实测（复用产品自己的兼容矩阵）和体检。
-- **magpie 侧**：`magpie-page/` 是一个 magpie page 插件，装好后在 magpie 窗口里告诉用户该填什么，并读一次网关的模型清单。
+- **magpie 侧**：`magpie-page/` 是一个 magpie page 插件，装好后在 magpie 窗口里告诉用户该填什么，一键复制。
 
 > Vibe AStock 从 v2 起只认 **OpenAI 兼容的 Chat Completions 端点**（`POST {base_url}/chat/completions`）。
 > magpie 正好说这套协议（`http://127.0.0.1:3425/v1`），所以两者能直接对接，不需要改产品代码。

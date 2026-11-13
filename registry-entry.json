@@ -4,7 +4,7 @@
   "kind": "page",
   "icon": null,
   "summary": {
-    "en": "Wire Vibe AStock to this gateway: the base URL, key and model names to paste, with a live model list",
-    "zh": "把 Vibe AStock 接到本网关：该填的地址、key 和模型名，带实时模型清单"
+    "en": "Wire Vibe AStock to this gateway: the base URL, key and model names to paste, in four steps",
+    "zh": "把 Vibe AStock 接到本网关：该填的地址、key 和模型名，四步接完"
   }
 }

@@ -57,9 +57,9 @@ therefore `"prompt"` — the product's own validators still check every artifact
 
 ## The magpie page plugin
 
-`magpie-page/` is a `page` package for magpie's Plugins tab: it shows the base URL, key and live model ids to paste into
-Vibe AStock, with copy buttons. It needs no permissions and no network of its own. See [PUBLISH.md](PUBLISH.md) for the
-registry pull request.
+`magpie-page/` is a `page` package for magpie's Plugins tab: it shows the base URL, key and model naming to paste into
+Vibe AStock, with copy buttons. It declares no permissions and makes no network requests of its own.
+See [PUBLISH.md](PUBLISH.md) for the registry pull request.
 
 ## License
 
