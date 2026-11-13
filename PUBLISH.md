@@ -37,23 +37,23 @@ npm publish --access public
 
 ## 3. magpie 插件市场
 
-magpie 的 Plugins 页读 [`magpie-community/plugins`](https://github.com/magpie-community/plugins) 的 `registry.json`，
-包体放在同仓库的 `packages/<名字>/`。
+magpie 的 Plugins › Discover 读 [`magpie-community/plugins`](https://github.com/magpie-community/plugins) 的 `registry.json`，
+包体放在同仓库的 `packages/<名字>/`。合并后 magpie 每小时拉一次，用户就能在 Discover 里搜到。
 
-1. Fork `magpie-community/plugins`。
-2. 把 `magpie-page/` 复制成 `packages/vibe-astock/`，包名改成 `@magpie-community/page-vibe-astock`，
+1. Fork `magpie-community/plugins` 并 clone 到本地。
+2. 把 `magpie-page/` 复制成 `packages/vibe-astock/`，改两处：`name` 改成 `@magpie-community/page-vibe-astock`，
    `repository.directory` 改成 `packages/vibe-astock`。
-3. `registry.json` 加一条，内容抄 [`registry-entry.json`](registry-entry.json)：
+3. `registry.json` 的 `plugins` 数组里加一条，内容抄 [`registry-entry.json`](registry-entry.json)：
 
    ```json
    {
      "package": "@magpie-community/page-vibe-astock",
      "name": "Vibe AStock",
      "kind": "page",
-     "icon": null,
+     "community": true,
      "summary": {
-       "en": "Wire Vibe AStock to this gateway: the base URL, key and model names to paste, in four steps",
-       "zh": "把 Vibe AStock 接到本网关：该填的地址、key 和模型名，四步接完"
+       "en": "Wire Vibe AStock to this gateway: the base URL, key and model names to paste, in four steps.",
+       "zh": "把 Vibe AStock 接到本网关：该填的地址、key 和模型名，四步接完。"
      }
    }
    ```
