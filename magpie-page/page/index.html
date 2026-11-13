@@ -35,7 +35,7 @@
     background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; flex: none;
   }
   p { margin: 0 0 8px; color: var(--muted); }
-  code, .kbd {
+  code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px;
     background: var(--code); padding: 2px 6px; border-radius: 5px; color: var(--fg);
   }
@@ -51,10 +51,11 @@
   }
   button:hover { border-color: var(--accent); color: var(--accent); }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  td, th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  td, th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { color: var(--muted); font-weight: 500; font-size: 12px; }
-  td.id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+  td.id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
   .empty { color: var(--muted); font-size: 13px; padding: 10px 0; }
+  .empty code { display: inline-block; margin-top: 4px; }
   footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -75,19 +76,19 @@
 
   <div class="status">
     <span class="dot" id="dot"></span>
-    <span id="statusText">正在检查网关…</span>
+    <span id="statusText" role="status" aria-live="polite">正在检查网关…</span>
   </div>
 
   <section>
     <h2><span class="n">1</span>确认网关在跑</h2>
     <p>magpie 默认监听 <code>127.0.0.1:3425</code>，OpenAI 兼容前缀是 <code>/v1</code>。改过 <code>MAGPIE_ADDR</code> 就用你改后的地址。</p>
-    <div class="cmd"><span>http://127.0.0.1:3425/v1</span><button data-copy="http://127.0.0.1:3425/v1">复制</button></div>
+    <div class="cmd"><span>http://127.0.0.1:3425/v1</span><button type="button" data-copy="http://127.0.0.1:3425/v1">复制</button></div>
   </section>
 
   <section>
     <h2><span class="n">2</span>把 Vibe AStock 接上</h2>
     <p>在 Vibe AStock 仓库目录里跑一次（它会写 <code>.local/providers/magpie.json</code>，并给「接入 AI」的下拉补一条 Magpie 网关）：</p>
-    <div class="cmd"><span id="cmdInstall">npx vibe-astock-magpie install</span><button data-copy-target="cmdInstall">复制</button></div>
+    <div class="cmd"><span id="cmdInstall">npx vibe-astock-magpie install</span><button type="button" data-copy-target="cmdInstall">复制</button></div>
     <p class="tip">不想装命令行工具也行：Vibe AStock 页面「接入 AI」→ 选「其它 OpenAI 兼容端点」，把下面三项填进去。</p>
   </section>
 
@@ -95,25 +96,25 @@
     <h2><span class="n">3</span>在 Vibe AStock 里填这三项</h2>
     <table>
       <tr><th style="width:96px">字段</th><th>值</th></tr>
-      <tr><td>Base URL</td><td class="id">http://127.0.0.1:3425/v1 <button data-copy="http://127.0.0.1:3425/v1">复制</button></td></tr>
+      <tr><td>Base URL</td><td class="id">http://127.0.0.1:3425/v1 <button type="button" data-copy="http://127.0.0.1:3425/v1">复制</button></td></tr>
       <tr><td>Model</td><td class="id">见下表（形如 <code>provider/model</code>）</td></tr>
-      <tr><td>API Key</td><td class="id">magpie <button data-copy="magpie">复制</button></td></tr>
+      <tr><td>API Key</td><td class="id">magpie <button type="button" data-copy="magpie">复制</button></td></tr>
     </table>
     <p class="tip">key 是 magpie 自己的本地 key，不是上游厂商的 key；上游的 key 和订阅登录都在 magpie 里配。</p>
   </section>
 
   <section>
     <h2>网关的模型</h2>
-    <div id="models" class="empty">点下面的按钮读一次清单。</div>
-    <p style="margin-top:10px"><button id="reload">读取 /v1/models</button></p>
+    <div id="models" class="empty">正在读取…</div>
+    <p style="margin-top:10px"><button type="button" id="reload">重新读取 /v1/models</button></p>
     <p class="tip">读不到不代表 Vibe AStock 连不上：页面受浏览器跨域限制，Vibe AStock 是从本机后端直接连网关的。</p>
   </section>
 
   <footer>
     Vibe AStock · A 股短线复盘与跟踪工作台 ——
-    <a href="https://github.com/simonlin1212/vibe-astock" target="_blank" rel="noreferrer">源码</a> ·
-    <a href="https://github.com/yetone/magpie" target="_blank" rel="noreferrer">magpie</a> ·
-    插件 <a href="https://github.com/lee-lipeng/vibe-astock-magpie" target="_blank" rel="noreferrer">vibe-astock-magpie</a>
+    <a href="https://github.com/simonlin1212/vibe-astock" target="_blank" rel="noreferrer noopener">源码</a> ·
+    <a href="https://github.com/yetone/magpie" target="_blank" rel="noreferrer noopener">magpie</a> ·
+    插件 <a href="https://github.com/lee-lipeng/vibe-astock-magpie" target="_blank" rel="noreferrer noopener">vibe-astock-magpie</a>
   </footer>
 </div>
 <script>
@@ -122,19 +123,67 @@
   const statusText = document.getElementById("statusText");
   const modelsBox = document.getElementById("models");
 
-  function copy(text, btn) {
-    const done = () => { const old = btn.textContent; btn.textContent = "已复制"; setTimeout(() => (btn.textContent = old), 1200); };
-    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, () => {});
-    else {
-      const ta = document.createElement("textarea");
-      ta.value = text; document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); done(); } catch {}
-      document.body.removeChild(ta);
+  /** 复制到剪贴板；按钮短暂显示「已复制」 */
+  function copy(text, button) {
+    const flash = () => {
+      const old = button.textContent;
+      button.textContent = "已复制";
+      setTimeout(() => { button.textContent = old; }, 1200);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(flash, () => {});
+      return;
     }
+    const area = document.createElement("textarea");
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    try { document.execCommand("copy"); flash(); } catch { /* 浏览器不给就算了 */ }
+    document.body.removeChild(area);
   }
-  document.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", () => copy(b.dataset.copy, b)));
-  document.querySelectorAll("[data-copy-target]").forEach((b) =>
-    b.addEventListener("click", () => copy(document.getElementById(b.dataset.copyTarget).textContent, b)));
+
+  document.querySelectorAll("[data-copy]").forEach((button) =>
+    button.addEventListener("click", () => copy(button.dataset.copy, button)));
+  document.querySelectorAll("[data-copy-target]").forEach((button) =>
+    button.addEventListener("click", () => copy(document.getElementById(button.dataset.copyTarget).textContent, button)));
+
+  /** 用 DOM 拼模型表：模型 id 与标签来自网关，一律当文本，不拼 HTML */
+  function renderModels(entries) {
+    const table = document.createElement("table");
+    const head = table.insertRow();
+    for (const title of ["模型 id", "说明"]) {
+      const th = document.createElement("th");
+      th.textContent = title;
+      head.appendChild(th);
+    }
+    for (const entry of entries) {
+      const row = table.insertRow();
+      const idCell = row.insertCell();
+      idCell.className = "id";
+      idCell.textContent = entry.id;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "复制";
+      button.style.marginLeft = "8px";
+      button.addEventListener("click", () => copy(entry.id, button));
+      idCell.appendChild(button);
+      const labelCell = row.insertCell();
+      labelCell.textContent = entry.label || "";
+      labelCell.style.color = "var(--muted)";
+      labelCell.style.fontSize = "12px";
+    }
+    modelsBox.className = "";
+    modelsBox.replaceChildren(table);
+  }
+
+  function renderProblem(message) {
+    modelsBox.className = "empty";
+    const text = document.createElement("div");
+    text.textContent = "浏览器跨域或网关没启动（" + message + "）。在终端确认：";
+    const cmd = document.createElement("code");
+    cmd.textContent = "curl " + BASE + "/models";
+    modelsBox.replaceChildren(text, cmd);
+  }
 
   async function loadModels() {
     modelsBox.className = "empty";
@@ -143,26 +192,20 @@
       const res = await fetch(BASE + "/models", { signal: AbortSignal.timeout(4000) });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const body = await res.json();
-      const ids = (body?.data ?? []).map((m) => m.id).filter(Boolean);
-      if (!ids.length) throw new Error("清单为空");
+      const entries = (body?.data ?? [])
+        .filter((m) => m && typeof m.id === "string")
+        .map((m) => ({ id: m.id, label: typeof m.magpie_label === "string" ? m.magpie_label : "" }));
+      if (!entries.length) throw new Error("清单为空");
       dot.className = "dot ok";
-      statusText.textContent = "网关在线，共 " + ids.length + " 个模型";
-      const rows = ids.map((id) => {
-        const label = (body.data.find((m) => m.id === id) || {}).magpie_label || "";
-        return `<tr><td class="id">${id} <button data-copy="${id}">复制</button></td><td style="color:var(--muted);font-size:12px">${label}</td></tr>`;
-      }).join("");
-      modelsBox.className = "";
-      modelsBox.innerHTML = `<table><tr><th>模型 id</th><th>说明</th></tr>${rows}</table>`;
-      modelsBox.querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", () => copy(b.dataset.copy, b)));
+      statusText.textContent = "网关在线，共 " + entries.length + " 个模型";
+      renderModels(entries);
     } catch (e) {
       dot.className = "dot bad";
-      statusText.textContent = "这个页面读不到网关（" + (e && e.message ? e.message : e) + "）";
-      modelsBox.className = "empty";
-      modelsBox.innerHTML =
-        '浏览器跨域或网关没启动。在终端确认：<br><code>curl ' + BASE + '/models</code><br>' +
-        'Vibe AStock 从本机后端直连，不受这个限制；模型名也可以直接抄 Vibe AStock 里的清单。';
+      statusText.textContent = "这个页面读不到网关";
+      renderProblem(e instanceof Error ? e.message : String(e));
     }
   }
+
   document.getElementById("reload").addEventListener("click", loadModels);
   loadModels();
 </script>

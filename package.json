@@ -1,6 +1,6 @@
 {
   "name": "vibe-astock-magpie",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Connect Vibe AStock (A-share short-line workbench) to a local magpie gateway: provider template, UI preset patch, capability matrix and a magpie page plugin",
   "type": "module",
   "bin": {
@@ -20,7 +20,6 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "install:local": "node bin/cli.mjs install",
     "doctor": "node bin/cli.mjs doctor"
   },
   "keywords": [
@@ -32,6 +31,9 @@
     "a-share"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lee-lipeng/vibe-astock-magpie.git"

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.1 — 2026-11-13
+
+发布前的一轮代码审查，无接口变更。
+
+- 补丁保留原文件换行风格：Windows 检出是 CRLF，之前插入的行是裸 LF，会让 `git diff` 混行尾。
+- 幂等判据改成显式的 `sentinel`，不再依赖 `replace.trim()` 的隐式比较。
+- `--base-url` 走 `normalizeBaseURL`：去掉尾斜杠（产品侧拼 `/chat/completions`，多一个斜杠会 404）、
+  拒绝远程 http 与带凭据的地址，规则与 Vibe AStock 的 `providerUrlError` 对齐。
+- 模板安装语义修正：显式 `--model` / `--base-url` 优先，未给才沿用已装的值；内容没变不重写。
+- `--repo` / `--data-root` 忘了给值时不再把 `true` 当路径。
+- `verify` 先检查 `orchestrator/node_modules` 与矩阵入口，缺依赖时给一句能照做的提示。
+- 安装时模型清单只打前 12 个；`--dry-run` 的补丁输出改成「将打补丁」。
+- magpie 页面：模型清单改用 DOM 构建（原来拼 `innerHTML`，网关返回的 `magpie_label` 会被当 HTML 解析），
+  并补 `role="status"`、`type="button"`、`rel="noopener"`。
+- 测试从 7 项扩到 11 项：CRLF 往返、地址校验、模板安装语义、数据根解析。
+
 ## 0.1.0 — 2026-11-13
 
 首个版本。
