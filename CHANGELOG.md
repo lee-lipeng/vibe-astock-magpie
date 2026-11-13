@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 — 2026-11-13
+
+装完插件后不再手抄 URL / 模型名 / key：下拉里直接挑一个模型。
+
+- 「接入 AI」的模型下拉里列出网关的**每个模型**（`Magpie · GLM-5.3-Flash —— auto/glm-5.3-flash · 1.0M`），
+  选中后 Base URL、Model、API Key 三项自动带出。
+- 新增 `models` 命令：在 magpie 里加了 provider / 路由组后刷新下拉（编译期常量，运行时不发请求）；
+  `doctor` 会对比下拉条数与网关条数，不一致直接报出来。
+- 模型清单改成一个标记块（`// magpie-plugin:begin` / `:end`）：刷新整块替换，卸载整块删除；
+  另加 `Settings.tsx` 的 key 预填补丁（选中 Magpie 时填本地默认 key `magpie`）。
+- 重装不再丢 `verify` 写下的 `direct` 段。
+- 测试 16 项：新增模型清单块的插入 / 刷新 / 摘除 / CRLF、清单转条目、key 预填补丁。
+
 ## 0.1.2 — 2026-11-13
 
 magpie page 插件按 magpie 的实际加载方式重做（已在 magpie 0.1.x 本机安装验证）。

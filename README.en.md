@@ -20,24 +20,23 @@ The installer:
 
 1. probes `http://127.0.0.1:3425/v1/models` and writes `<repo>/.local/providers/magpie.json` with a working default model
    (prefers magpie's `auto/*` routing groups); a gateway that is not running is not fatal — the model is just left empty;
-2. adds a **Magpie gateway** entry to the *Connect AI* model picker: five lines in two frontend files, each marked
-   `// magpie-plugin`, idempotent and reversible.
+2. renders **every model the gateway offers** into the *Connect AI* picker (one marked block), plus five one-line patches
+   (type, base URL, source label, key prefill), each marked `// magpie-plugin`, idempotent and reversible.
 
-Then restart Vibe AStock and fill in:
+Then restart Vibe AStock and pick a model:
 
-| Field | Value |
-|---|---|
-| Model picker | **Magpie 网关** |
-| Base URL | `http://127.0.0.1:3425/v1` |
-| Model | `auto/glm-5.3-flash` (any `provider/model` from `/v1/models`) |
-| API Key | `magpie` — magpie's own local key, not an upstream vendor key |
+**Connect AI → API → choose any `Magpie · …` entry → Test and save.**
 
-Without the tool, the stock UI works too: *Connect AI → Other OpenAI-compatible endpoint*, same three values.
+Base URL, model id and the API key (`magpie`, the gateway's local default) are filled in for you.
+
+> After adding a provider or routing group in magpie, run `vibe-astock-magpie models` and reload the page — the picker is
+> a compile-time constant, so nothing is fetched at runtime. `doctor` tells you when it is out of date.
 
 ## Commands
 
 ```
 vibe-astock-magpie install     [--repo DIR] [--base-url URL] [--model ID] [--key KEY] [--no-ui] [--force] [--dry-run]
+vibe-astock-magpie models      [--repo DIR] [--base-url URL] [--key KEY]
 vibe-astock-magpie uninstall   [--repo DIR]
 vibe-astock-magpie verify      [--repo DIR] [--tests 1,2,7,8] [--model ID] [--write]
 vibe-astock-magpie doctor      [--repo DIR]

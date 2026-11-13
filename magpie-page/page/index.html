@@ -33,16 +33,13 @@
   </section>
 
   <section>
-    <h2><span class="n">3</span>在 Vibe AStock 里填这三项</h2>
-    <table>
-      <tr><th style="width:96px">字段</th><th>值</th></tr>
-      <tr><td>Base URL</td><td class="id">http://127.0.0.1:3425/v1 <button type="button" data-copy="http://127.0.0.1:3425/v1">复制</button></td></tr>
-      <tr><td>Model</td><td class="id">magpie 里的模型名，形如 <code>auto/glm-5.3-flash</code>、<code>codex/gpt-6-sol</code></td></tr>
-      <tr><td>API Key</td><td class="id">magpie <button type="button" data-copy="magpie">复制</button></td></tr>
-    </table>
+    <h2><span class="n">3</span>在 Vibe AStock 里选一个模型</h2>
+    <p>装好插件后，「接入 AI → API 接入」的模型下拉里会直接列出这个网关的每个模型（前缀 <code>Magpie ·</code>）。挑一个就行：</p>
+    <div class="cmd"><span>Magpie · GLM-5.3-Flash —— auto/glm-5.3-flash</span><button type="button" data-copy="auto/glm-5.3-flash">复制 id</button></div>
     <p class="tip">
-      模型名在 magpie 自己的模型列表里复制（本页不读网关，也不申请任何权限）。
-      key 是 magpie 的本地 key，不是上游厂商的 key —— 上游的 key 和订阅登录都在 magpie 里配。
+      Base URL（<code>http://127.0.0.1:3425/v1</code>）、Model（该模型的 id）、API Key（<code>magpie</code>）
+      会跟着自动带出，不用手抄。在 magpie 里加了新模型后，跑一次
+      <code>npx vibe-astock-magpie models</code> 再刷新页面。
     </p>
   </section>
 

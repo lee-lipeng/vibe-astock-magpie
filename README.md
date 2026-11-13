@@ -15,7 +15,7 @@
 
 | 方式 | 要装东西吗 | 界面里能看到 | 适合 |
 |---|---|---|---|
-| **A. 装本插件**（推荐） | 要（Node 22.18+） | 「接入 AI」下拉里有 *Magpie 网关* | 想一次配好、带实测记录 |
+| **A. 装本插件**（推荐） | 要（Node 22.18+） | 「接入 AI」下拉里直接列出网关的每个模型，选一个就行 | 想一次配好、带实测记录 |
 | **B. 只放模板** | 不要，手写一个 JSON | 下拉里没有，命令行/后台默认可用 | 只在命令行跑研究 |
 | **C. 什么都不装** | 不要 | 选「其它 OpenAI 兼容端点」手填三项 | 试一次 |
 
@@ -34,19 +34,20 @@ npx vibe-astock-magpie install --repo D:\GitHub\vibe-astock --no-ui
 
 安装器会：
 
-1. 探测 `http://127.0.0.1:3425/v1/models`，把可用的模型名（优先 `auto/*` 路由组）写进
+1. 探测 `http://127.0.0.1:3425/v1/models`，把默认模型（优先 `auto/*` 路由组）写进
    `<仓库>/.local/providers/magpie.json`；网关没启动也能装，只是默认模型留空。
-2. 给 `desktop/src/verticals/finance/lib/ai-models.ts` 和 `aiConnection.ts` 各加几行
-   （每行带 `// magpie-plugin` 标记），让下拉里出现 *Magpie 网关*。
+2. 把网关当前的**每个模型**渲染成下拉条目，整块插进 `ai-models.ts` 的标记之间；
+   另加 5 行小补丁（类型、Base URL、来源名、key 预填），每行带 `// magpie-plugin` 标记。
 
-然后重启产品、在页面里填：
+然后重启产品，页面里只剩一步：
 
-| 字段 | 值 |
-|---|---|
-| 模型 | **Magpie 网关** |
-| Base URL | `http://127.0.0.1:3425/v1`（已自动填） |
-| Model | `auto/glm-5.3-flash`（安装时探测到的，可换成任意 `provider/model`） |
-| API Key | `magpie`（magpie 自己的本地 key，不是上游厂商的 key） |
+**接入 AI → API 接入 → 模型下拉里挑一个 `Magpie · …` → 点「测试并保存」。**
+
+Base URL（`http://127.0.0.1:3425/v1`）、Model（该模型的 id）、API Key（`magpie`，magpie 的本地默认 key）
+都会跟着自动带出来，不用手抄。
+
+> 在 magpie 里加了新的 provider / 路由组之后，跑一次 `vibe-astock-magpie models` 刷新下拉
+> （下拉是编译期常量，运行时不发请求，所以需要这一步）。`doctor` 会告诉你有没有过期。
 
 ### B. 只放模板（不要 Node 工具链）
 
@@ -71,16 +72,18 @@ $env:MAGPIE_API_KEY = "magpie"
 
 ```
 vibe-astock-magpie install     [--repo DIR] [--base-url URL] [--model ID] [--key KEY] [--no-ui] [--force] [--dry-run]
+vibe-astock-magpie models      [--repo DIR] [--base-url URL] [--key KEY]
 vibe-astock-magpie uninstall   [--repo DIR]
 vibe-astock-magpie verify      [--repo DIR] [--tests 1,2,7,8] [--model ID] [--write]
 vibe-astock-magpie doctor      [--repo DIR]
 ```
 
+- `models` 只刷新下拉里的模型清单：在 magpie 里加了 provider / 路由组之后跑，刷新页面就生效。
 - `verify` 直接调 Vibe AStock 自己的 `orchestrator/src/finance/provider_matrix.ts`，真跑 10 个小回合
   （文本、单/连续/并行工具调用、工具失败自修复、长输出、工具后分句收尾、服务端 JSON Schema、多轮上下文、图片输入），
   结论落在 `.local/provider-matrix/magpie/<时间>/`，`--write` 才把建议的 `direct` 段写回模板。
-- `doctor` 检查：仓库、数据根、模板能否解析、网关可达性、默认模型在不在清单里、补丁现状、有没有实测记录。
-- `uninstall` 删模板 + 逐行摘掉补丁，仓库回到原样（`git status` 干净）。
+- `doctor` 检查：仓库、数据根、模板能否解析、网关可达性、默认模型在不在清单里、下拉条数与网关是否一致、补丁现状、有没有实测记录。
+- `uninstall` 删模板 + 摘掉补丁（含整块模型清单），仓库回到原样（`git status` 干净）。
 
 ## 实测结论（2026-11-13，模型 `auto/glm-5.3-flash`）
 
@@ -108,18 +111,24 @@ Vibe AStock 后端已经支持**数据根里的任意 provider 模板**（`<数�
 但「接入 AI」的模型下拉是编译期常量，没有动态来源。所以：
 
 - 模板 → 走产品**已有的**扩展点，零改代码；
-- 下拉里那一行 → 只能改前端静态清单，5 行，带标记、可逆、锚点缺失时自动跳过。
+- 模型清单 → 安装时把网关的每个模型渲染成条目，整块插在一对标记之间（`// magpie-plugin:begin` / `:end`），
+  刷新时整块替换、卸载时整块删除；
+- 另外 5 行小补丁（类型、Base URL、来源名、key 预填）各带标记，锚点缺失时自动跳过。
 
-上游如果以后让下拉读后端模板清单，这个补丁就可以退休（`--no-ui` 现在就能不用它）。
+**为什么不运行时拉取**：magpie 的网关不带 CORS 头、`OPTIONS` 直接 404，页面里 `fetch('/v1/models')` 必被浏览器拦；
+要绕开就得再改 Vite 代理或后端路由，风险比「多跑一条 `models` 命令」大得多。
+
+上游如果以后让下拉读后端模板清单，这些补丁就可以退休（`--no-ui` 现在就能不用它们）。
 
 ## 目录
 
 ```
 provider.json          Vibe AStock provider 模板（通用版，default_model 留空）
-bin/cli.mjs            命令入口：install / uninstall / verify / doctor
+bin/cli.mjs            命令入口：install / models / uninstall / verify / doctor
 lib/install.mjs        仓库定位、数据根、模板读写、网关探测
-lib/patch.mjs          「接入 AI」下拉补丁（幂等、可逆、锚点缺失安全）
-test/patch.test.mjs    纯函数测试（npm test）
+lib/models.mjs         网关清单 → 下拉条目（含上下文格式化、兜底项）
+lib/patch.mjs          「接入 AI」补丁：模型清单块 + 5 行小补丁（幂等、可逆、锚点缺失安全）
+test/patch.test.mjs    纯函数测试（npm test，16 项）
 magpie-page/           magpie page 插件：装进 magpie 的 Plugins 页
 PUBLISH.md             发布到 npm / GitHub / magpie 插件市场的步骤
 ```
@@ -133,10 +142,12 @@ PUBLISH.md             发布到 npm / GitHub / magpie 插件市场的步骤
 
 **key 填什么？** magpie 自己的本地 key，默认字面量就是 `magpie`。上游厂商的 key 在 magpie 里配。
 
+**在 magpie 里加了模型，下拉里没有？** 跑一次 `vibe-astock-magpie models`，再 Ctrl+F5。`doctor` 会直接告诉你差几个。
+
 **`git pull` 之后下拉里没了？** 上游改动会覆盖被补丁的文件，重跑一次 `install` 即可（幂等）。
 
 **会改我仓库里的东西吗？** 只有两件事：`<数据根>/providers/magpie.json`（数据根本来就被 `.gitignore`），
-以及前端那两个 `.ts` 文件里的几行。`uninstall` 全部撤回。
+以及前端三个文件里的标记行/标记块。`uninstall` 全部撤回，`git status` 干净。
 
 ## 许可
 

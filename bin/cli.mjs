@@ -25,7 +25,8 @@ import {
   templatePath,
   uninstallTemplate,
 } from "../lib/install.mjs";
-import { applyPatches, patchState, revertPatches } from "../lib/patch.mjs";
+import { applyPatches, modelsFilePath, patchState, revertPatches } from "../lib/patch.mjs";
+import { countModelEntries, renderModelBlock, toModelEntries } from "../lib/models.mjs";
 
 const MAX_MODELS_PRINTED = 12;
 
@@ -34,7 +35,8 @@ const HELP = `vibe-astock-magpie ${readVersion()}
 用法: vibe-astock-magpie <命令> [选项]
 
 命令:
-  install     接进 Vibe AStock：写 providers 模板，可选给「接入 AI」下拉补一条 Magpie 网关
+  install     接进 Vibe AStock：写 providers 模板，并把网关当前的模型逐个放进「接入 AI」下拉
+  models      只刷新下拉里的模型清单（在 magpie 里加了 provider / 路由组之后跑）
   uninstall   摘掉模板与下拉补丁
   verify      实测这条线（复用 Vibe AStock 的兼容矩阵），--write 把结论写回模板
   doctor      体检：仓库 / 数据根 / 模板 / 网关 / 模型 / 补丁
@@ -46,9 +48,13 @@ const HELP = `vibe-astock-magpie ${readVersion()}
 
 install 选项:
   --base-url URL    网关地址，默认 ${DEFAULT_BASE}
-  --model ID        模型名（provider/model 或 auto/xxx）；不给就现场探测
+  --model ID        模板的默认模型（命令行研究用）；不给就现场探测
   --key KEY         探测用的本地 key，默认 magpie（只用于探测，不写进模板）
   --no-ui           不打下拉补丁（只装模板；页面里用「其它 OpenAI 兼容端点」手填）
+
+models 选项:
+  --base-url URL    覆盖模板里的网关地址
+  --key KEY         本地 key，默认 magpie
 
 verify 选项:
   --tests 1,2,7,8   只跑这几项（1-10）
@@ -130,19 +136,20 @@ async function cmdInstall(args) {
   say(`数据根  ${dataRoot}`);
   say(`网关    ${baseURL}`);
 
+  // 总要探测一次：模板要默认模型，下拉要整份清单
+  const probe = await probeModels(baseURL, key);
   let model = str(args.model) ?? null;
-  if (!model) {
-    const probe = await probeModels(baseURL, key);
-    if (probe.ok) {
-      model = pickModel(probe.ids);
-      say(`探测    ${probe.ids.length} 个模型，默认选 ${model}`);
-      for (const id of probe.ids.slice(0, MAX_MODELS_PRINTED)) say(`          - ${id}`);
-      if (probe.ids.length > MAX_MODELS_PRINTED) say(`          … 另有 ${probe.ids.length - MAX_MODELS_PRINTED} 个，见 /v1/models`);
-    } else {
-      warn(`探测    ${probe.url} 失败：${probe.why}`);
-      if (probe.hint) warn(`        ${probe.hint}`);
-      warn("        模板照样装上，默认模型留空，稍后在页面里填。");
+  if (probe.ok) {
+    if (!model) model = pickModel(probe.ids);
+    say(`探测    ${probe.ids.length} 个模型${model ? `，模板默认选 ${model}` : ""}`);
+    for (const id of probe.ids.slice(0, MAX_MODELS_PRINTED)) say(`          - ${id}`);
+    if (probe.ids.length > MAX_MODELS_PRINTED) {
+      say(`          … 另有 ${probe.ids.length - MAX_MODELS_PRINTED} 个，见 /v1/models`);
     }
+  } else {
+    warn(`探测    ${probe.url} 失败：${probe.why}`);
+    if (probe.hint) warn(`        ${probe.hint}`);
+    warn("        模板照样装上，默认模型留空；下拉里先放一条「手填模型名」，网关起来后跑 models 刷新。");
   }
 
   const result = installTemplate({ dataRoot, baseURL, model, dryRun });
@@ -152,7 +159,8 @@ async function cmdInstall(args) {
   if (args["no-ui"]) {
     say("下拉    已跳过（--no-ui）：页面里选「其它 OpenAI 兼容端点」手填地址即可");
   } else {
-    const patched = applyPatches({ repoRoot: repo, baseURL, dryRun });
+    const entries = probe.ok ? toModelEntries(probe.models) : [];
+    const patched = applyPatches({ repoRoot: repo, baseURL, block: renderModelBlock(entries), dryRun });
     for (const id of patched.applied) say(`下拉    ${dryRun ? "将打补丁" : "补丁"} ${id}`);
     for (const skip of patched.skipped) {
       if (skip.why === "已应用") continue;
@@ -161,17 +169,44 @@ async function cmdInstall(args) {
     if (!patched.applied.length && !patched.skipped.some((s) => s.why === "已应用")) {
       warn("下拉    这一版页面结构不同，没打上补丁；用「其它 OpenAI 兼容端点」手填即可");
     }
+    say(`下拉    ${entries.length || 1} 个 Magpie 模型可选（${entries.length ? "来自网关" : "手填模型名"}）`);
   }
 
   say("");
   say("下一步:");
   say(`  1) 实测   vibe-astock-magpie verify --repo "${repo}" --write`);
   say(`  2) 重启   ${path.join(repo, "start-vibe-astock.cmd")}（macOS / Linux: scripts/start）`);
-  say(
-    `  3) 页面   接入 AI → 模型选「Magpie 网关」→ Model 填 ${
-      result.template.default_model ?? "<GET /v1/models 里的 id>"
-    } → API Key 填 ${key}`,
-  );
+  say("  3) 页面   接入 AI → 模型 API → 模型下拉里直接挑一个 Magpie 模型 → 测试并保存（URL 和 key 已预填）");
+}
+
+// ── models ──────────────────────────────────────────────────────────────
+/** 只刷新下拉里的模型清单：在 magpie 里加了 provider / 路由组之后跑 */
+async function cmdModels(args) {
+  const repo = resolveRepo(args);
+  const dataRoot = dataRootOf(repo, args["data-root"]);
+  const dryRun = Boolean(args["dry-run"]);
+  const tplPath = templatePath(dataRoot);
+
+  const template = fs.existsSync(tplPath) ? JSON.parse(fs.readFileSync(tplPath, "utf8")) : null;
+  let baseURL;
+  try {
+    baseURL = normalizeBaseURL(str(args["base-url"]) ?? template?.base_url ?? DEFAULT_BASE);
+  } catch (e) {
+    fail(e.message);
+  }
+
+  const probe = await probeModels(baseURL, str(args.key) ?? "magpie");
+  if (!probe.ok) {
+    fail(`网关 ${probe.url} 不可达：${probe.why}${probe.hint ? `（${probe.hint}）` : ""}\n    没有覆盖现有清单；网关起来后再跑一次`);
+  }
+
+  const entries = toModelEntries(probe.models);
+  const patched = applyPatches({ repoRoot: repo, baseURL, block: renderModelBlock(entries), dryRun });
+  const skipped = patched.skipped.filter((s) => s.id !== "model-entries" && s.why !== "已应用");
+  if (skipped.length) for (const skip of skipped) warn(`跳过 ${skip.id}：${skip.why}`);
+
+  say(`已刷新 ${entries.length} 个 Magpie 模型${dryRun ? "（dry-run，未写入）" : ""} → ${path.relative(repo, modelsFilePath(repo))}`);
+  say("刷新页面（Ctrl+F5）后，下拉里就是最新的模型清单。");
 }
 
 // ── uninstall ───────────────────────────────────────────────────────────
@@ -237,6 +272,17 @@ async function cmdDoctor(args) {
   const state = patchState({ repoRoot: repo });
   if (state.patched) ok(`「接入 AI」下拉补丁已打：${state.files.map((f) => path.relative(repo, f)).join(", ")}`);
   else skip("没有下拉补丁：页面里用「其它 OpenAI 兼容端点」手填地址");
+
+  // 下拉里的模型条数 vs 网关现在的条数：对不上就是 magpie 里加过 provider / 路由组
+  const modelsFile = modelsFilePath(repo);
+  if (fs.existsSync(modelsFile)) {
+    const listed = countModelEntries(fs.readFileSync(modelsFile, "utf8"));
+    if (!probe.ok) skip(`下拉里有 ${listed} 个 Magpie 模型（网关不可达，没法核对）`);
+    else if (listed !== probe.ids.length) bad(`下拉里 ${listed} 个模型，网关有 ${probe.ids.length} 个：跑 vibe-astock-magpie models 刷新`);
+    else ok(`下拉里 ${listed} 个 Magpie 模型，与网关一致`);
+  } else {
+    skip("没有模型清单块（install 时会写入）");
+  }
 
   if (template?.direct) {
     ok(`实测记录：supported=${template.direct.supported} structured_output=${template.direct.structured_output}（${template.direct.verified_at}）`);
@@ -345,6 +391,7 @@ if (!command || command === "help" || args.help || args.h) {
 
 try {
   if (command === "install") await cmdInstall(args);
+  else if (command === "models") await cmdModels(args);
   else if (command === "uninstall") cmdUninstall(args);
   else if (command === "verify") await cmdVerify(args);
   else if (command === "doctor") await cmdDoctor(args);

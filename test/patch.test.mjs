@@ -1,5 +1,5 @@
 /**
- * 纯函数测试：补丁的幂等 / 可逆 / 换行安全 / 锚点缺失，模板与地址处理。
+ * 纯函数测试：补丁的幂等 / 可逆 / 换行安全 / 锚点缺失，模型清单块，模板与地址处理。
  * 跑：npm test
  */
 import assert from "node:assert/strict";
@@ -8,7 +8,16 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { MARK, applyPatchToText, patchSpecs, revertPatchesFromText } from "../lib/patch.mjs";
+import {
+  BLOCK_BEGIN,
+  BLOCK_END,
+  MARK,
+  applyPatchToText,
+  patchSpecs,
+  revertPatchesFromText,
+  upsertModelBlock,
+} from "../lib/patch.mjs";
+import { countModelEntries, renderModelBlock, toModelEntries } from "../lib/models.mjs";
 import { dataRootOf, installTemplate, normalizeBaseURL, pickModel, templatePath } from "../lib/install.mjs";
 
 const BASE = "http://127.0.0.1:3425/v1";
@@ -36,7 +45,20 @@ const CONN_SAMPLE = `const SOURCE_LABELS: Record<string, string> = {
 };
 `;
 
-/** 对某个文件的样本依次应用补丁 */
+const SETTINGS_SAMPLE = `  const pickApi = (id: string) => {
+    const m = API_MODELS.find((x) => x.id === id);
+    if (!m) return;
+    setApiId(id); setModelName(modelNameForPreset(id)); setBaseURL(PROVIDER_BASE[m.provider] ?? "");
+    setMsg(""); setMsgErr("");
+  };
+`;
+
+const ENTRIES = [
+  { id: "auto/glm-5.3-flash", name: "GLM-5.3-Flash", description: "auto/glm-5.3-flash · 1.0M" },
+  { id: "codex/gpt-6-sol", name: "GPT-6-Sol", description: "codex/gpt-6-sol · 500K" },
+];
+
+/** 对某个文件的样本依次应用单行补丁 */
 function patchText(text, file, baseURL = BASE) {
   let out = text;
   const states = [];
@@ -48,16 +70,15 @@ function patchText(text, file, baseURL = BASE) {
   return { out, states };
 }
 
-test("五处补丁都能打上，且都带标记", () => {
+test("models 文件的三处单行补丁都能打上，且都带标记", () => {
   const { out, states } = patchText(MODELS_SAMPLE, "models");
   assert.deepEqual(
     states.map((s) => s.state),
-    ["applied", "applied", "applied", "applied"],
+    ["applied", "applied", "applied"],
   );
-  assert.equal(out.split(MARK).length - 1, 4);
+  assert.equal(out.split(MARK).length - 1, 3);
   assert.match(out, /\| "magpie" \/\/ magpie-plugin/);
   assert.match(out, /magpie: "http:\/\/127\.0\.0\.1:3425\/v1", \/\/ magpie-plugin/);
-  assert.match(out, /id: "magpie", name: "Magpie 网关"/);
   assert.match(out, /id === "custom" \|\| id === "magpie"/);
 });
 
@@ -66,7 +87,7 @@ test("重复打补丁幂等（第二次全部 already，文本不变）", () => 
   const twice = patchText(once, "models");
   assert.deepEqual(
     twice.states.map((s) => s.state),
-    ["already", "already", "already", "already"],
+    ["already", "already", "already"],
   );
   assert.equal(twice.out, once);
 });
@@ -98,11 +119,68 @@ test("标签补丁另起一行，不会吃掉原来的 glm / kimi / qwen", () =>
   assert.equal(revertPatchesFromText(out), CONN_SAMPLE);
 });
 
+test("选中 Magpie 时预填本地 key，且卸载后还原", () => {
+  const { out, states } = patchText(SETTINGS_SAMPLE, "settings");
+  assert.equal(states[0].state, "applied");
+  assert.match(out, /if \(m\.provider === "magpie" && !apiKey\) setApiKey\("magpie"\);/);
+  assert.equal(revertPatchesFromText(out), SETTINGS_SAMPLE);
+});
+
 test("插入型补丁必须把锚点原样留在替换结果里", () => {
   for (const spec of patchSpecs(BASE)) {
     if (!spec.find.endsWith("\n")) continue; // 改写整行的补丁靠 restore 还原
     assert.ok(spec.replace.includes(spec.find), `${spec.id} 的 replace 里丢了锚点`);
   }
+});
+
+test("模型清单块：插入、刷新、摘除", () => {
+  const block = renderModelBlock(ENTRIES);
+  assert.ok(block.startsWith(BLOCK_BEGIN));
+  assert.ok(block.trimEnd().endsWith(BLOCK_END));
+
+  const inserted = upsertModelBlock(MODELS_SAMPLE, block);
+  assert.equal(inserted.state, "applied");
+  assert.equal(countModelEntries(inserted.text), 2);
+  // 插在「其它 OpenAI 兼容端点」之前，custom 那条还在
+  assert.ok(inserted.text.indexOf(BLOCK_END) < inserted.text.indexOf('{ id: "custom"'));
+  assert.match(inserted.text, /\{ id: "custom", name: "其它 OpenAI 兼容端点"/);
+
+  const refreshed = upsertModelBlock(inserted.text, renderModelBlock([ENTRIES[0]]));
+  assert.equal(refreshed.state, "applied");
+  assert.equal(countModelEntries(refreshed.text), 1);
+  assert.equal(refreshed.text.split(BLOCK_BEGIN).length - 1, 1, "不能出现两个块");
+
+  assert.equal(upsertModelBlock(refreshed.text, renderModelBlock([ENTRIES[0]])).state, "already");
+  assert.equal(revertPatchesFromText(refreshed.text), MODELS_SAMPLE);
+});
+
+test("模型清单块跟随 CRLF，摘下后与原文件一致", () => {
+  const crlf = MODELS_SAMPLE.replace(/\n/g, "\r\n");
+  const { text } = upsertModelBlock(crlf, renderModelBlock(ENTRIES));
+  assert.ok(text.split(BLOCK_BEGIN)[1].startsWith(" 由"), "块首行是标记行");
+  assert.ok(text.includes('provider: "magpie" },\r\n'), "条目行以 CRLF 结尾");
+  assert.ok(!/[^\r]\n/.test(text));
+  assert.equal(revertPatchesFromText(text), crlf);
+});
+
+test("网关没有模型时，清单块仍放一条可手填的兜底项", () => {
+  const block = renderModelBlock([]);
+  assert.match(block, /id: "magpie"/);
+  assert.equal(countModelEntries(block), 1);
+});
+
+test("网关清单 → 下拉条目：去重、标签兜底、上下文格式化", () => {
+  const entries = toModelEntries([
+    { id: "auto/glm-5.3-flash", magpie_label: "GLM-5.3-Flash · routing group", context_window: 1_000_000 },
+    { id: "auto/glm-5.3-flash", magpie_label: "重复", context_window: 1 },
+    { id: "codex/gpt-6-sol", context_window: 500_000 },
+    { magpie_label: "没有 id" },
+  ]);
+  assert.equal(entries.length, 2);
+  assert.equal(entries[0].name, "Magpie · GLM-5.3-Flash · routing group");
+  assert.equal(entries[0].description, "auto/glm-5.3-flash · 1.0M");
+  assert.equal(entries[1].name, "Magpie · codex/gpt-6-sol", "没有标签就用 id");
+  assert.equal(entries[1].description, "codex/gpt-6-sol · 500K");
 });
 
 test("网关地址规范化：去尾斜杠、放行 https 与本机 http、拒绝远程 http 与凭据", () => {
@@ -138,10 +216,20 @@ test("模板安装：显式参数优先，未给时沿用已装的值", () => {
     assert.equal(changed.action, "updated");
     assert.equal(changed.template.default_model, "auto/b");
 
+    // 重装不能丢掉 verify 写进来的 direct 段
+    const withDirect = {
+      ...JSON.parse(fs.readFileSync(templatePath(dataRoot), "utf8")),
+      direct: { supported: true, structured_output: "prompt", verified_at: "2026-11-13" },
+    };
+    fs.writeFileSync(templatePath(dataRoot), `${JSON.stringify(withDirect, null, 2)}\n`, "utf8");
+    const reinstalled = installTemplate({ dataRoot, model: "auto/c" });
+    assert.deepEqual(reinstalled.template.direct, withDirect.direct);
+
     const saved = JSON.parse(fs.readFileSync(templatePath(dataRoot), "utf8"));
     assert.equal(saved.id, "magpie");
     assert.match(saved.env_key, /^[A-Z][A-Z0-9_]*$/);
-    assert.equal(saved.default_model, "auto/b");
+    assert.equal(saved.default_model, "auto/c");
+    assert.deepEqual(saved.direct, withDirect.direct);
   } finally {
     fs.rmSync(dataRoot, { recursive: true, force: true });
   }

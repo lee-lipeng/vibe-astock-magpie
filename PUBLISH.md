@@ -10,7 +10,7 @@
 ## 0. 先自检
 
 ```sh
-npm test                     # 11 项：补丁幂等 / 可逆 / CRLF 安全 / 锚点缺失 / 地址校验 / 模板安装语义
+npm test                     # 16 项：模型清单块、补丁幂等 / 可逆 / CRLF、地址校验、模板安装语义
 node bin/cli.mjs doctor --repo /path/to/vibe-astock
 node bin/cli.mjs install --repo /path/to/vibe-astock --dry-run
 ```

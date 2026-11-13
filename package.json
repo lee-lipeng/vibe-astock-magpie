@@ -1,6 +1,6 @@
 {
   "name": "vibe-astock-magpie",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Connect Vibe AStock (A-share short-line workbench) to a local magpie gateway: provider template, UI preset patch, capability matrix and a magpie page plugin",
   "type": "module",
   "bin": {
