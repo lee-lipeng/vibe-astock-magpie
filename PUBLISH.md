@@ -17,12 +17,16 @@ node bin/cli.mjs install --repo /path/to/vibe-astock --dry-run
 
 ## 1. GitHub
 
-仓库名建议 `vibe-astock-magpie`（`package.json` 的 `repository` 已经指向 `lee-lipeng/vibe-astock-magpie`，换名字要一起改）。
+仓库名建议 `vibe-astock-magpie`。下面三处写死了 `lee-lipeng/vibe-astock-magpie`，**换用户名或仓库名时要一起改**：
+
+- `package.json` 的 `repository`
+- `README.md` / `README.en.md` 里两张截图的 raw 地址（用绝对地址是因为 npm 不解析 README 的相对图片）
+- `magpie-page/package.json` 的 `repository`
 
 ```sh
 git init -b main
 git add -A
-git commit -m "feat: connect Vibe AStock to a magpie gateway (provider template + UI preset + magpie page)"
+git commit -m "feat: list every magpie model in Vibe AStock's Connect AI picker"
 git remote add origin git@github.com:lee-lipeng/vibe-astock-magpie.git
 git push -u origin main
 ```

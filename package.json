@@ -1,7 +1,7 @@
 {
   "name": "vibe-astock-magpie",
   "version": "0.2.0",
-  "description": "Connect Vibe AStock (A-share short-line workbench) to a local magpie gateway: provider template, UI preset patch, capability matrix and a magpie page plugin",
+  "description": "Connect Vibe AStock (A-share short-line workbench) to a local magpie gateway: every gateway model in the Connect AI picker, a capability matrix, and a magpie page plugin",
   "type": "module",
   "bin": {
     "vibe-astock-magpie": "./bin/cli.mjs"
@@ -19,7 +19,7 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "test": "node --test test/*.test.mjs",
+    "test": "node --test test/patch.test.mjs",
     "doctor": "node bin/cli.mjs doctor"
   },
   "keywords": [
